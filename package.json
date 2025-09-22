@@ -1,0 +1,35 @@
+{
+  "name": "freshmart-grocery-ecommerce",
+  "version": "1.0.0",
+  "description": "Complete MERN stack grocery ecommerce application with admin panel",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "cd backend && npm install && cd ../frontend/grocery-frontend && npm install && cd ../../admin-panel/grocery-admin && npm install",
+    "start-backend": "cd backend && npm start",
+    "start-frontend": "cd frontend/grocery-frontend && npm run dev",
+    "start-admin": "cd admin-panel/grocery-admin && npm run dev",
+    "test-api": "node test-api.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "grocery",
+    "mern",
+    "react",
+    "nodejs",
+    "mongodb",
+    "express",
+    "admin-panel"
+  ],
+  "author": "FreshMart Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/freshmart/grocery-ecommerce"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "cloudinary": "^2.7.0"
+  }
+}
