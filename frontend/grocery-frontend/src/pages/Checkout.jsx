@@ -291,7 +291,7 @@ const Checkout = () => {
                   <span>{formatPrice(getDeliveryCharges())}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Tax (5%)</span>
+                  <span>Tax (GST)</span>
                   <span>{formatPrice(getTax())}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2">

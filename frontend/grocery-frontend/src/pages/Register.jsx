@@ -63,8 +63,10 @@ const Register = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    // Strong password (min 8, 1 upper, 1 lower, 1 digit, 1 special)
+    const strong = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!strong.test(formData.password)) {
+      setError('Password must be 8+ chars, include upper, lower, number, and special char');
       setLoading(false);
       return;
     }

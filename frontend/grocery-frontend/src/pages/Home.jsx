@@ -48,12 +48,8 @@ const Home = () => {
   };
 
   const handleAddToCart = (product) => {
-    if (!isAuthenticated) {
-      toast.warning('Please login to your account to add items to cart');
-      return;
-    }
     addToCart(product, 1);
-    toast.success('Added to cart');
+    toast.success(isAuthenticated ? 'Added to cart' : 'Added to cart (guest)');
   };
 
   if (loading) {
@@ -168,7 +164,7 @@ const Home = () => {
                 <CardContent className="p-0">
                   <div className="relative">
                     <img
-                      src={product.images[0]?.url || '/placeholder-product.jpg'}
+                      src={product.images?.[0]?.url ? (product.images?.[0]?.url.startsWith('http') ? product.images?.[0]?.url : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${product.images?.[0]?.url}`) : '/placeholder-product.jpg'}
                       alt={product.name}
                       className="w-full h-48 object-cover rounded-t-lg"
                     />

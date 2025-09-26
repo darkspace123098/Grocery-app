@@ -17,7 +17,7 @@ const Profile = () => {
     confirmPassword: ''
   });
   const [activeTab, setActiveTab] = useState('profile');
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, logout, changePassword } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,16 +68,23 @@ const Profile = () => {
       return;
     }
 
-    if (formData.newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters');
+    // Strong password policy
+    const strong = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!strong.test(formData.newPassword)) {
+      toast.error('Password must be 8+ chars, include upper, lower, number, and special char');
       return;
     }
 
     setLoading(true);
 
     try {
-      // This would need to be implemented in the backend
-      toast.error('Password change not implemented yet');
+      const res = await changePassword({ currentPassword: formData.currentPassword, newPassword: formData.newPassword });
+      if (res.success) {
+        toast.success('Password changed successfully');
+        setFormData((prev) => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
+      } else {
+        toast.error(res.message || 'Failed to change password');
+      }
     } catch (error) {
       toast.error('Failed to change password');
     } finally {

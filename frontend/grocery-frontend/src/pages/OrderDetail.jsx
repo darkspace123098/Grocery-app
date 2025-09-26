@@ -22,13 +22,32 @@ const OrderDetail = () => {
       return;
     }
     fetchOrder();
+    // Poll for status updates every 10s
+    const interval = setInterval(async () => {
+      try {
+        const track = await ordersAPI.trackOrder(id);
+        setOrder((prev) => {
+          if (!prev) return prev;
+          const nextStatusHistory = Array.isArray(track.data.statusHistory) ? track.data.statusHistory : prev.statusHistory;
+          const nextCurrent = track.data.currentStatus || (nextStatusHistory?.[nextStatusHistory.length - 1]?.status);
+          return { ...prev, statusHistory: nextStatusHistory, currentStatus: nextCurrent };
+        });
+      } catch (_) {}
+    }, 10000);
+    return () => clearInterval(interval);
   }, [id, isAuthenticated, navigate]);
 
   const fetchOrder = async () => {
     try {
       setLoading(true);
       const response = await ordersAPI.getOrder(id);
-      setOrder(response.data);
+      const data = response.data;
+      const normalized = {
+        ...data,
+        currentStatus: data.currentStatus || (data.statusHistory?.[data.statusHistory.length - 1]?.status),
+        statusHistory: Array.isArray(data.statusHistory) ? data.statusHistory : [],
+      };
+      setOrder(normalized);
     } catch (error) {
       console.error('Failed to fetch order:', error);
       setError('Failed to load order details');
@@ -68,7 +87,7 @@ const OrderDetail = () => {
     );
   }
 
-  const currentStatus = order.statusHistory[order.statusHistory.length - 1]?.status;
+  const currentStatus = order.currentStatus || order.statusHistory[order.statusHistory.length - 1]?.status;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

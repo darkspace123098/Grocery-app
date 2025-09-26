@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_ORIGIN = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = `${API_ORIGIN}/api`;
 
 // Create axios instance
 export const api = axios.create({
@@ -30,8 +31,13 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+    const status = error.response?.status;
+    const url = error.config?.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
+    const hasToken = !!localStorage.getItem('token');
+
+    if (status === 401 && !isAuthEndpoint && hasToken) {
+      // Token expired or invalid for protected requests
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
@@ -62,6 +68,14 @@ export const ordersAPI = {
   cancelOrder: (id) => api.put(`/orders/${id}/cancel`),
   trackOrder: (id) => api.get(`/orders/${id}/track`),
   getUserStats: () => api.get('/orders/stats/user'),
+};
+
+export const cartAPI = {
+  getCart: () => api.get('/cart'),
+  addToCart: (productId, quantity) => api.post('/cart/add', { productId, quantity }),
+  updateCartItem: (productId, quantity) => api.put('/cart/update', { productId, quantity }),
+  removeFromCart: (productId) => api.delete(`/cart/remove/${productId}`),
+  clearCart: () => api.delete('/cart/clear'),
 };
 
 export const settingsAPI = {

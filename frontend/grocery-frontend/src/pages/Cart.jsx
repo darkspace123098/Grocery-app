@@ -54,13 +54,21 @@ const Cart = () => {
               {items.map((item) => (
                 <div key={item.product._id} className="flex items-center space-x-4 p-4 border rounded-lg">
                   <img
-                    src={item.product.images[0]?.url || '/placeholder-product.jpg'}
+                    src={(function(){
+                      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                      const imgFromArray = item.product.images?.[0]?.url;
+                      const imgSingle = item.product.image;
+                      const chosen = imgFromArray || imgSingle;
+                      if (!chosen) return '/placeholder-product.jpg';
+                      return chosen.startsWith('http') ? chosen : `${apiBase}${chosen}`;
+                    })()}
                     alt={item.product.name}
                     className="w-16 h-16 object-cover rounded-lg"
                   />
                   
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{item.product.name}</h3>
+                    <p className="text-sm text-gray-500 line-clamp-2">{item.product.description}</p>
                     <p className="text-sm text-gray-600">
                       {item.product.quantity} {item.product.unit} • {item.product.brand}
                     </p>
@@ -151,7 +159,7 @@ const Cart = () => {
               </div>
               
               <div className="flex justify-between">
-                <span className="text-gray-600">Tax (GST 5%)</span>
+                <span className="text-gray-600">Tax (GST)</span>
                 <span className="font-medium">{formatPrice(getTax())}</span>
               </div>
               

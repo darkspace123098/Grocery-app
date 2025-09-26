@@ -1,7 +1,17 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 const Footer = () => {
+  const { settings } = useSettings();
+  const brand = settings?.storeName || 'Store';
+  const initial = (brand || 'S').trim().charAt(0).toUpperCase();
+  const phone = settings?.contactPhone || '+91 1800-123-4567';
+  const email = settings?.supportEmail || 'support@example.com';
+  const line1 = settings?.addressLine1 || '123 Market Street';
+  const line2 = settings?.addressLine2 || 'Mumbai, Maharashtra 400001';
+  const country = settings?.addressCountry || 'India';
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -10,9 +20,9 @@ const Footer = () => {
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">F</span>
+                <span className="text-white font-bold text-lg">{initial}</span>
               </div>
-              <span className="text-xl font-bold">FreshMart</span>
+              <span className="text-xl font-bold">{brand}</span>
             </div>
             <p className="text-gray-300 mb-4">
               Your trusted online grocery store delivering fresh products right to your doorstep across India.
@@ -100,18 +110,18 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-green-500" />
-                <span className="text-gray-300">+91 1800-123-4567</span>
+                <span className="text-gray-300">{phone}</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-green-500" />
-                <span className="text-gray-300">support@freshmart.com</span>
+                <span className="text-gray-300">{email}</span>
               </div>
               <div className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-green-500 mt-1" />
                 <span className="text-gray-300">
-                  123 Market Street,<br />
-                  Mumbai, Maharashtra 400001<br />
-                  India
+                  {line1}<br />
+                  {line2}<br />
+                  {country}
                 </span>
               </div>
             </div>
@@ -121,7 +131,7 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-300 text-sm">
-              © 2024 FreshMart. All rights reserved.
+              © {new Date().getFullYear()} {brand}. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-gray-300 hover:text-white text-sm transition-colors">

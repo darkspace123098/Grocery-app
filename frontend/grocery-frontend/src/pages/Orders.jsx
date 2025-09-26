@@ -22,11 +22,27 @@ const Orders = () => {
     }
   }, [isAuthenticated]);
 
+  // Poll for status updates periodically
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
       const response = await ordersAPI.getOrders();
-      setOrders(response.data);
+      // Ensure we always keep latest status in a consistent field
+      const normalized = Array.isArray(response.data)
+        ? response.data.map((o) => ({
+            ...o,
+            currentStatus: o.currentStatus || (o.statusHistory?.[o.statusHistory.length - 1]?.status),
+          }))
+        : [];
+      setOrders(normalized);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
       setError('Failed to load orders');
@@ -105,8 +121,8 @@ const Orders = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <Badge className={getStatusColor(order.statusHistory[order.statusHistory.length - 1]?.status)}>
-                      {order.statusHistory[order.statusHistory.length - 1]?.status}
+                    <Badge className={getStatusColor(order.currentStatus || order.statusHistory[order.statusHistory.length - 1]?.status)}>
+                      {order.currentStatus || order.statusHistory[order.statusHistory.length - 1]?.status}
                     </Badge>
                     <p className="text-lg font-semibold mt-2">
                       {cartFormatPrice(order.totalPrice)}

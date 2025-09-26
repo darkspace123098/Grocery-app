@@ -36,20 +36,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const extractErrorMessage = (error, fallback) => {
+    const data = error?.response?.data;
+    if (Array.isArray(data?.errors) && data.errors.length > 0) {
+      const first = data.errors[0];
+      return first.msg || first.message || fallback;
+    }
+    return data?.message || fallback;
+  };
+
   const login = async (email, password) => {
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
-      
       localStorage.setItem('token', token);
       setToken(token);
       setUser(user);
-      
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed' 
+      return {
+        success: false,
+        message: extractErrorMessage(error, 'Login failed'),
       };
     }
   };
@@ -58,16 +65,14 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/auth/register', userData);
       const { token, user } = response.data;
-      
       localStorage.setItem('token', token);
       setToken(token);
       setUser(user);
-      
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Registration failed' 
+      return {
+        success: false,
+        message: extractErrorMessage(error, 'Registration failed'),
       };
     }
   };
@@ -85,9 +90,21 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.user);
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Profile update failed' 
+      return {
+        success: false,
+        message: extractErrorMessage(error, 'Profile update failed'),
+      };
+    }
+  };
+
+  const changePassword = async ({ currentPassword, newPassword }) => {
+    try {
+      const response = await api.put('/auth/change-password', { currentPassword, password: newPassword });
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: extractErrorMessage(error, 'Password change failed'),
       };
     }
   };
@@ -100,7 +117,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
-    isAuthenticated: !!user
+    changePassword,
+    isAuthenticated: !!user,
   };
 
   return (

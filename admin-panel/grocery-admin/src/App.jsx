@@ -17,6 +17,7 @@ import Products from './pages/Products';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import Admins from './pages/Admins';
 
 function App() {
   return (
@@ -78,6 +79,7 @@ const AdminLayout = () => {
             <Route path="/orders" element={<Orders />} />
             <Route path="/users" element={<Users />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/admins" element={<Admins />} />
           </Routes>
         </main>
       </div>

@@ -21,6 +21,11 @@ const Products = () => {
   const [pagination, setPagination] = useState({});
   const [viewMode, setViewMode] = useState('grid');
   const [searchParams, setSearchParams] = useSearchParams();
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
+  const [priceInputs, setPriceInputs] = useState({
+    minPrice: searchParams.get('minPrice') || '',
+    maxPrice: searchParams.get('maxPrice') || ''
+  });
   const { addToCart, formatPrice } = useCart();
   const { isAuthenticated } = useAuth();
 
@@ -77,6 +82,20 @@ const Products = () => {
     setSearchParams(params);
   };
 
+  // Keep search input in sync if URL/searchParams change externally
+  useEffect(() => {
+    setSearchInput(filters.search || '');
+  }, [filters.search]);
+
+  
+  // Keep price inputs in sync if URL/searchParams change externally
+  useEffect(() => {
+    setPriceInputs({
+      minPrice: filters.minPrice || '',
+      maxPrice: filters.maxPrice || ''
+    });
+  }, [filters.minPrice, filters.maxPrice]);
+
   const handlePageChange = (page) => {
     const updatedFilters = { ...filters, page };
     setFilters(updatedFilters);
@@ -87,12 +106,8 @@ const Products = () => {
   };
 
   const handleAddToCart = (product) => {
-    if (!isAuthenticated) {
-      toast.warning('Please login to your account to add items to cart');
-      return;
-    }
     addToCart(product, 1);
-    toast.success('Added to cart');
+    toast.success(isAuthenticated ? 'Added to cart' : 'Added to cart (guest)');
   };
 
   const FilterSidebar = ({ className = '' }) => (
@@ -101,10 +116,28 @@ const Products = () => {
         <Label className="text-base font-semibold">Search</Label>
         <Input
           placeholder="Search products..."
-          value={filters.search}
-          onChange={(e) => updateFilters({ search: e.target.value })}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              updateFilters({ search: searchInput });
+            }
+          }}
           className="mt-2"
         />
+        <div className="mt-2 flex gap-2">
+          <Button size="sm" onClick={() => updateFilters({ search: searchInput })}>Search</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setSearchInput('');
+              updateFilters({ search: '' });
+            }}
+          >
+            Clear
+          </Button>
+        </div>
       </div>
 
       <div>
@@ -143,15 +176,43 @@ const Products = () => {
           <Input
             placeholder="Min price"
             type="number"
-            value={filters.minPrice}
-            onChange={(e) => updateFilters({ minPrice: e.target.value })}
+            value={priceInputs.minPrice}
+            onChange={(e) => setPriceInputs(prev => ({ ...prev, minPrice: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                updateFilters({ minPrice: priceInputs.minPrice, maxPrice: priceInputs.maxPrice });
+              }
+            }}
           />
           <Input
             placeholder="Max price"
             type="number"
-            value={filters.maxPrice}
-            onChange={(e) => updateFilters({ maxPrice: e.target.value })}
+            value={priceInputs.maxPrice}
+            onChange={(e) => setPriceInputs(prev => ({ ...prev, maxPrice: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                updateFilters({ minPrice: priceInputs.minPrice, maxPrice: priceInputs.maxPrice });
+              }
+            }}
           />
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              onClick={() => updateFilters({ minPrice: priceInputs.minPrice, maxPrice: priceInputs.maxPrice })}
+            >
+              Apply
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setPriceInputs({ minPrice: '', maxPrice: '' });
+                updateFilters({ minPrice: '', maxPrice: '' });
+              }}
+            >
+              Clear
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -274,7 +335,7 @@ const Products = () => {
                         <div className="relative">
                           <Link to={`/products/${product._id}`}>
                             <img
-                              src={product.images[0]?.url || '/placeholder-product.jpg'}
+                              src={product.images?.[0]?.url ? (product.images?.[0]?.url.startsWith('http') ? product.images?.[0]?.url : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${product.images?.[0]?.url}`) : '/placeholder-product.jpg'}
                               alt={product.name}
                               className="w-full h-48 object-cover rounded-t-lg"
                             />
@@ -291,6 +352,7 @@ const Products = () => {
                               {product.name}
                             </h3>
                           </Link>
+                          <p className="text-sm text-gray-500 mb-2 line-clamp-2">{product.description}</p>
                           <p className="text-sm text-gray-600 mb-2">
                             {product.quantity} {product.unit} • {product.brand}
                           </p>
@@ -326,7 +388,7 @@ const Products = () => {
                         <div className="relative flex-shrink-0">
                           <Link to={`/products/${product._id}`}>
                             <img
-                              src={product.images[0]?.url || '/placeholder-product.jpg'}
+                              src={product.images?.[0]?.url ? (product.images?.[0]?.url.startsWith('http') ? product.images?.[0]?.url : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${product.images?.[0]?.url}`) : '/placeholder-product.jpg'}
                               alt={product.name}
                               className="w-24 h-24 object-cover rounded-lg"
                             />
@@ -343,6 +405,7 @@ const Products = () => {
                               {product.name}
                             </h3>
                           </Link>
+                          <p className="text-sm text-gray-500 mb-2 line-clamp-2">{product.description}</p>
                           <p className="text-sm text-gray-600 mb-2">
                             {product.quantity} {product.unit} • {product.brand}
                           </p>

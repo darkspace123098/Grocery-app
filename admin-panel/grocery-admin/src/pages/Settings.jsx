@@ -13,6 +13,10 @@ const Settings = () => {
     supportEmail: '',
     deliveryFee: '',
     taxRate: '',
+    contactPhone: '',
+    addressLine1: '',
+    addressLine2: '',
+    addressCountry: '',
   });
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,6 +38,10 @@ const Settings = () => {
         supportEmail: data.supportEmail || '',
         deliveryFee: String(data.deliveryFee ?? ''),
         taxRate: String(data.taxRate ?? ''),
+        contactPhone: data.contactPhone || '',
+        addressLine1: data.addressLine1 || '',
+        addressLine2: data.addressLine2 || '',
+        addressCountry: data.addressCountry || '',
       });
     } catch (err) {
       setError(err.message || 'Failed to load settings');
@@ -60,6 +68,10 @@ const Settings = () => {
         supportEmail: values.supportEmail.trim(),
         deliveryFee: Number(values.deliveryFee) || 0,
         taxRate: Number(values.taxRate) || 0,
+        contactPhone: values.contactPhone.trim(),
+        addressLine1: values.addressLine1.trim(),
+        addressLine2: values.addressLine2.trim(),
+        addressCountry: values.addressCountry.trim(),
       };
 
       const res = await fetch(`${API_BASE}/api/settings`, {
@@ -76,6 +88,8 @@ const Settings = () => {
         throw new Error(errorData.message || 'Failed to save settings');
       }
 
+      // Trigger settings refresh across the application
+      localStorage.setItem('settings_updated', Date.now().toString());
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -129,6 +143,22 @@ const Settings = () => {
               <div className="space-y-2">
                 <Label htmlFor="taxRate">Tax rate (%)</Label>
                 <Input id="taxRate" name="taxRate" type="number" min="0" step="0.01" value={values.taxRate} onChange={handleChange} placeholder="5" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contactPhone">Contact phone</Label>
+                <Input id="contactPhone" name="contactPhone" value={values.contactPhone} onChange={handleChange} placeholder="+91 1800-123-4567" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine1">Address line 1</Label>
+                <Input id="addressLine1" name="addressLine1" value={values.addressLine1} onChange={handleChange} placeholder="123 Market Street" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine2">Address line 2</Label>
+                <Input id="addressLine2" name="addressLine2" value={values.addressLine2} onChange={handleChange} placeholder="Mumbai, Maharashtra 400001" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressCountry">Country</Label>
+                <Input id="addressCountry" name="addressCountry" value={values.addressCountry} onChange={handleChange} placeholder="India" />
               </div>
             </div>
             <div className="flex items-center gap-3">

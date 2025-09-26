@@ -1,17 +1,44 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { X, LayoutDashboard, Package, ShoppingCart, Users, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const [storeName, setStoreName] = useState('FreshMart');
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.storeName) setStoreName(data.storeName);
+        }
+      } catch (_) {}
+    };
+
+    fetchSettings();
+
+    const onStorage = (e) => {
+      if (e.key === 'settings_updated') fetchSettings();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Products', href: '/products', icon: Package },
     { name: 'Orders', href: '/orders', icon: ShoppingCart },
     { name: 'Users', href: '/users', icon: Users },
+    { name: 'Admins', href: '/admins', icon: Users },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
+
+  const initial = (storeName || 'A').trim().charAt(0).toUpperCase();
 
   return (
     <>
@@ -30,9 +57,9 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between h-16 px-6 border-b">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">F</span>
+              <span className="text-white font-bold text-lg">{initial}</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">FreshMart Admin</span>
+            <span className="text-xl font-bold text-gray-900">{storeName} Admin</span>
           </div>
           <Button
             variant="ghost"
@@ -45,31 +72,17 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="mt-6 px-3">
-          <div className="space-y-1">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={onClose}
-                  className={`
-                    group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                    ${isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                    }
-                  `}
-                >
-                  <item.icon className={`
-                    mr-3 h-5 w-5 flex-shrink-0
-                    ${isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}
-                  `} />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </div>
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={`flex items-center px-3 py-2 rounded-md mb-1 hover:bg-gray-100 ${location.pathname.startsWith(item.href) ? 'bg-gray-100 text-gray-900' : 'text-gray-700'}`}
+              onClick={onClose}
+            >
+              <item.icon className="w-4 h-4 mr-3" />
+              <span className="text-sm font-medium">{item.name}</span>
+            </Link>
+          ))}
         </nav>
       </div>
     </>

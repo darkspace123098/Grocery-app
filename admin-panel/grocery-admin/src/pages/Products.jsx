@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -15,6 +16,7 @@ const Products = () => {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
   const [form, setForm] = useState({
@@ -29,21 +31,45 @@ const Products = () => {
   const { token } = useAuth();
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`${API_BASE}/api/products`);
-        if (!res.ok) throw new Error('Failed to fetch products');
-        const data = await res.json();
-        setProducts(data.data || data); // Handle both response formats
-      } catch (err) {
-        setError(err.message || 'Something went wrong');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError('');
+    const primaryUrl = `${API_BASE}/api/products`;
+    const fallbackUrl = `/api/products`;
+    try {
+      let res = await fetch(primaryUrl);
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Request to ${primaryUrl} failed (${res.status}). ${text || ''}`.trim());
+      }
+      const data = await res.json();
+      setProducts(data.data || data);
+    } catch (primaryErr) {
+      console.error('Primary products fetch error:', primaryErr);
+      // Try fallback relative URL (useful if API_BASE is misconfigured and a dev proxy is present)
+      try {
+        let res2 = await fetch(fallbackUrl);
+        if (!res2.ok) {
+          const text2 = await res2.text().catch(() => '');
+          throw new Error(`Request to ${fallbackUrl} failed (${res2.status}). ${text2 || ''}`.trim());
+        }
+        const data2 = await res2.json();
+        setProducts(data2.data || data2);
+      } catch (fallbackErr) {
+        console.error('Fallback products fetch error:', fallbackErr);
+        setProducts([]);
+        setError(
+          `Failed to fetch products. URL tried: ${primaryUrl} ` +
+          `(${primaryErr.message}). Fallback: ${fallbackUrl} (${fallbackErr.message}).`
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = query
     ? products.filter((p) =>
@@ -65,45 +91,101 @@ const Products = () => {
   const resetForm = () => {
     setForm({ name: '', description: '', price: '', category: '', stock: '', image: null });
     setCreateError('');
+    setEditingProduct(null);
+  };
+
+  const openEditDialog = (product) => {
+    setEditingProduct(product);
+    setForm({
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
+      category: product.category || '',
+      stock: product.stock || '',
+      image: null,
+    });
+    setOpen(true);
   };
 
   const createProduct = async (e) => {
     e.preventDefault();
     setCreateLoading(true);
     setCreateError('');
+    
     try {
+      if (!token) {
+        throw new Error('You must be logged in as an admin to add products');
+      }
+      
+      // Validation
+      if (!form.name.trim()) throw new Error('Product name is required');
+      if (!form.description.trim()) throw new Error('Product description is required');
+      if (!form.category.trim()) throw new Error('Product category is required');
+      if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) {
+        throw new Error('Please enter a valid price');
+      }
+      if (form.stock !== '' && (isNaN(Number(form.stock)) || Number(form.stock) < 0)) {
+        throw new Error('Please enter a valid stock value');
+      }
+
       const body = new FormData();
-      body.append('name', form.name);
-      body.append('description', form.description);
+      body.append('name', form.name.trim());
+      body.append('description', form.description.trim());
       body.append('price', String(form.price));
-      body.append('category', form.category);
+      body.append('category', form.category.trim());
       if (form.stock !== '') body.append('stock', String(form.stock));
       if (form.image) body.append('image', form.image);
 
-      const res = await fetch(`${API_BASE}/api/products`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }, // Do NOT set Content-Type for FormData
+      const url = editingProduct ? `${API_BASE}/api/products/${editingProduct._id}` : `${API_BASE}/api/products`;
+      const method = editingProduct ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
         body,
       });
+      
       const data = await res.json();
+      
       if (!res.ok) {
-        throw new Error(data.message || (data.errors && data.errors[0]?.msg) || 'Create failed');
+        const message = data?.message || (Array.isArray(data?.errors) && data.errors[0]?.msg) || 'Operation failed';
+        throw new Error(message);
       }
-      // Refresh list
-      setProducts((prev) => [data, ...prev]);
+      
+      toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
+      
+      // Refresh the products list
+      await fetchProducts();
       setOpen(false);
       resetForm();
       
-      // Also refresh the full list to ensure consistency
-      const res2 = await fetch(`${API_BASE}/api/products`);
-      if (res2.ok) {
-        const updatedData = await res2.json();
-        setProducts(updatedData.data || updatedData);
-      }
     } catch (err) {
       setCreateError(err.message || 'Something went wrong');
+      console.error('Create/Update product error:', err);
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/products/${productId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to delete product');
+      }
+      
+      toast.success('Product deleted successfully');
+      await fetchProducts();
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete product');
+      console.error('Delete product error:', err);
     }
   };
 
@@ -130,7 +212,7 @@ const Products = () => {
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Add Product</DialogTitle>
+                  <DialogTitle>{editingProduct ? 'Edit Product' : 'Add Product'}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={createProduct} className="space-y-4">
                   {createError && (
@@ -167,7 +249,7 @@ const Products = () => {
                       Cancel
                     </Button>
                     <Button type="submit" disabled={createLoading}>
-                      {createLoading ? 'Saving...' : 'Save'}
+                      {createLoading ? (editingProduct ? 'Updating...' : 'Saving...') : (editingProduct ? 'Update' : 'Save')}
                     </Button>
                   </div>
                 </form>
@@ -190,6 +272,7 @@ const Products = () => {
                   <TableHead>Category</TableHead>
                   <TableHead className="text-right">Price</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -199,6 +282,24 @@ const Products = () => {
                     <TableCell>{p.category}</TableCell>
                     <TableCell className="text-right">₹{Number(p.price || 0).toFixed(2)}</TableCell>
                     <TableCell className="text-right">{p.stock ?? '-'}</TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEditDialog(p)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteProduct(p._id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

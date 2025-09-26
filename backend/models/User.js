@@ -6,7 +6,11 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true, minlength: 6 },
   isAdmin: { type: Boolean, default: false },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  cart: [{
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    quantity: { type: Number, required: true, min: 1 }
+  }]
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

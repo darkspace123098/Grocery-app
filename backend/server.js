@@ -76,6 +76,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/cart', require('./routes/cart'));
 
 // Seed some demo products if none exist
 const Product = require('./models/Product');

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Search, Menu, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,13 +13,21 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { user, logout, isAuthenticated } = useAuth();
   const { getItemCount } = useCart();
+  const { settings } = useSettings();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (settings?.storeName) {
+      document.title = `${settings.storeName} - Shop`;
+    }
+  }, [settings?.storeName]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -34,6 +42,9 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const initial = (settings?.storeName || 'S').trim().charAt(0).toUpperCase();
+  const brand = settings?.storeName || 'Store';
+
   return (
     <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,9 +52,9 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">F</span>
+              <span className="text-white font-bold text-lg">{initial}</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">FreshMart</span>
+            <span className="text-xl font-bold text-gray-900">{brand}</span>
           </Link>
 
           {/* Search Bar - Desktop */}

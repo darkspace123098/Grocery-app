@@ -24,6 +24,16 @@ export const SettingsProvider = ({ children }) => {
 
   useEffect(() => {
     fetchSettings();
+    
+    // Listen for settings updates from admin panel
+    const handleStorageChange = (e) => {
+      if (e.key === 'settings_updated') {
+        fetchSettings();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const fetchSettings = async () => {
@@ -42,10 +52,15 @@ export const SettingsProvider = ({ children }) => {
     }
   };
 
+  const refreshSettings = () => {
+    fetchSettings();
+  };
+
   const value = {
     settings,
     loading,
-    fetchSettings
+    fetchSettings,
+    refreshSettings
   };
 
   return (
