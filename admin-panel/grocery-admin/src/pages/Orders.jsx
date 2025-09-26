@@ -26,7 +26,13 @@ const Orders = () => {
   const [savingId, setSavingId] = useState(null);
   const [error, setError] = useState('');
   const [isDemo, setIsDemo] = useState(true);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const { token } = useAuth();
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 250);
+    return () => clearTimeout(id);
+  }, [query]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -64,15 +70,14 @@ const Orders = () => {
   }, [token]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery;
     return orders.filter((o) => {
-      const matchesQuery = q
-        ? [o.id, o.customer].some((v) => v.toLowerCase().includes(q))
-        : true;
+      const hay = `${o.id} ${o.customer}`.toLowerCase();
+      const matchesQuery = q ? hay.includes(q) : true;
       const matchesStatus = statusFilter === 'All' ? true : o.status === statusFilter;
       return matchesQuery && matchesStatus;
     });
-  }, [orders, query, statusFilter]);
+  }, [orders, debouncedQuery, statusFilter]);
 
   const fetchLatest = async () => {
     try {

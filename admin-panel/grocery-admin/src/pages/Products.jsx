@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ const Products = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [createLoading, setCreateLoading] = useState(false);
@@ -33,6 +34,11 @@ const Products = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 250);
+    return () => clearTimeout(id);
+  }, [query]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -71,13 +77,11 @@ const Products = () => {
     }
   };
 
-  const filtered = query
-    ? products.filter((p) =>
-        [p.name, p.category, p.brand]
-          .filter(Boolean)
-          .some((v) => v.toLowerCase().includes(query.toLowerCase()))
-      )
-    : products;
+  const filtered = useMemo(() => {
+    const q = debouncedQuery;
+    if (!q) return products;
+    return products.filter((p) => `${p.name} ${p.category}`.toLowerCase().includes(q));
+  }, [products, debouncedQuery]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
